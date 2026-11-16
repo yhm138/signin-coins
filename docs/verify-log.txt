@@ -1,0 +1,38 @@
+连接: socket=/tmp/mysql.sock  库=signin_dsl_test
+服务端版本: 10.11.19-MariaDB-0+deb12u1
+会话前缀: SET SESSION max_recursive_iterations=1000000; SET SESSION max_statement_time=300;
+
+造数：干净数据 4737 行日志
+  r1_original.dsl          tier=1 日程表=8行 周期=7 常量折叠=True  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+  r2_fib_cycle7.dsl        tier=1 日程表=8行 周期=7 常量折叠=True  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+  r3_fib_cap.dsl           tier=1 日程表=19行 周期=1 常量折叠=True  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+  r4_fib_noreset.dsl       tier=1 日程表=31行 周期=None 常量折叠=True  自动=PASS 强制Tier2=PASS  (851 人日, 75 组)
+  r5_weekend.dsl           tier=1 日程表=8行 周期=7 常量折叠=False  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+  r6_break_keep.dsl        tier=2 日程表=None行 周期=None 常量折叠=None  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+  r7_makeup_card.dsl       tier=2 日程表=None行 周期=None 常量折叠=None  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+  r8_rule_changed.dsl      tier=1 日程表=10行 周期=9 常量折叠=True  自动=PASS 强制Tier2=PASS  (3149 人日, 150 组)
+
+与原始 @用户变量 SQL 对账（规则 1）:
+  干净数据: 一致  (150 组)
+  脏数据（同日重复签到日志，5563 行）:
+    DSL 编译产物 : 一致
+    @用户变量原版: 不一致
+    不一致组数 133/150；样例 (uid,月份) 正确 vs 原版 → [((1.0, 202107.0), 43.0, 45.0), ((1.0, 202108.0), 55.0, 54.0), ((1.0, 202109.0), 48.0, 49.0), ((1.0, 202110.0), 50.0, 57.0)]
+  插入顺序实验（同一份行集合，只改物理插入顺序）:
+    原始顺序           原版: 指纹 496adc8f3e，错 133/150 组
+                   DSL : 指纹 bc9dfd41ef，与参考一致=True
+    打乱 seed=42     原版: 直接报错 → ERROR 1690 (22003) at line 4: BIGINT UNSIGNED value is out of range in '`tmp1`.`coin` - `t
+                   DSL : 指纹 bc9dfd41ef，与参考一致=True
+    打乱 seed=99     原版: 直接报错 → ERROR 1690 (22003) at line 4: BIGINT UNSIGNED value is out of range in '`tmp1`.`coin` - `t
+                   DSL : 指纹 bc9dfd41ef，与参考一致=True
+  优化器开关实验（需要 SUPER 权限；无权限会自动跳过）:
+    derived_merge=on  → 指纹 496adc8f3e  与正确值不一致 133/150
+    derived_merge=off → 指纹 90c975ac2f  与正确值不一致 132/150
+    DSL 产物连跑 3 次指纹: ['bc9dfd41ef', 'bc9dfd41ef', 'bc9dfd41ef']  稳定=True
+
+基准测试（同数据、同规则、三条路径）:
+    200 用户 /   23562 行 /  15559 人日: Tier1    45.3 ms | Tier2     75.2 ms | @变量原版     93.8 ms | Tier1 加速  1.7x | 一致=True
+   1000 用户 /  117817 行 /  77955 人日: Tier1   205.2 ms | Tier2    385.9 ms | @变量原版    418.7 ms | Tier1 加速  1.9x | 一致=True
+   4000 用户 /  471377 行 / 311810 人日: Tier1   940.9 ms | Tier2   1735.2 ms | @变量原版   1725.2 ms | Tier1 加速  1.8x | 一致=True
+
+汇总: 8/8 条规则、两种后端全部与参考实现一致

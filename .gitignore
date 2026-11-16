@@ -1,0 +1,33 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# venv
+.venv/
+venv/
+env/
+
+# 测试与基准的临时产物
+*.log
+!docs/verify-log.txt
+/tmp/
+.scratch/
+
+# Node（Mermaid 校验工具的临时依赖）
+node_modules/
+package-lock.json
+tools/package.json
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# 本地连接配置（不要提交凭据）
+.env
+.env.local

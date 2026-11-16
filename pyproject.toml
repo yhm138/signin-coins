@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "signin-coins"
+version = "0.1.0"
+description = "签到规则 DSL 编译器：过程式 DSL → 集合式 SQL（窗口函数 + 编译期常量表），必要时降级递归 CTE"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+keywords = ["sql", "dsl", "compiler", "mysql", "window-functions", "recursive-cte", "sign-in"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+    "Topic :: Software Development :: Compilers",
+]
+dependencies = []          # 运行时零第三方依赖
+
+[project.scripts]
+dslc = "dslc:main"
+
+[tool.setuptools]
+py-modules = ["dslc"]

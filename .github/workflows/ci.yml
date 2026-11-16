@@ -1,0 +1,100 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    name: 单元测试 / Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 单元测试（无需数据库）
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: 编译产物漂移检测
+        run: make sql-check
+
+  mermaid:
+    name: 文档 Mermaid 图校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: make mermaid
+
+  e2e-mysql8:
+    name: 端到端 / MySQL 8.0
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: signin_dsl_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecret"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: signin_dsl_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装 mysql 客户端
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+      - name: 端到端交叉验证（8 条规则 × 2 条后端）
+        run: python tests/e2e_verify.py --skip-bench
+
+  e2e-mariadb:
+    name: 端到端 / MariaDB 10.11
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: secret
+          MARIADB_ROOT_HOST: "%"
+          MARIADB_DATABASE: signin_dsl_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: signin_dsl_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装 mysql 客户端
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+      - name: 端到端交叉验证
+        run: python tests/e2e_verify.py --skip-bench
