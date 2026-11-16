@@ -61,8 +61,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: 安装 mysql 客户端
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
+      # runner 镜像本身已预装 mysql 客户端。此前这里是
+      # `sudo apt-get update && sudo apt-get install -y mysql-client`，
+      # 在新镜像（ubuntu-26.04，`ubuntu-latest` 已迁移过去）上会触发整个
+      # MySQL 栈升级，而镜像预装的 mysql-server 其 postinst 在容器化 runner 里
+      # 配置失败 → dpkg 报错 → apt 退出码 100，e2e 根本没跑。改为直接断言可用。
+      - name: 确认 mysql 客户端可用（镜像预装，不安装）
+        run: mysql --version
       - name: 端到端交叉验证（8 条规则 × 2 条后端）
         run: python tests/e2e_verify.py --skip-bench
 
@@ -94,7 +99,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: 安装 mysql 客户端
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
+      # runner 镜像本身已预装 mysql 客户端。此前这里是
+      # `sudo apt-get update && sudo apt-get install -y mysql-client`，
+      # 在新镜像（ubuntu-26.04，`ubuntu-latest` 已迁移过去）上会触发整个
+      # MySQL 栈升级，而镜像预装的 mysql-server 其 postinst 在容器化 runner 里
+      # 配置失败 → dpkg 报错 → apt 退出码 100，e2e 根本没跑。改为直接断言可用。
+      - name: 确认 mysql 客户端可用（镜像预装，不安装）
+        run: mysql --version
       - name: 端到端交叉验证
         run: python tests/e2e_verify.py --skip-bench
